@@ -1,0 +1,33 @@
+name: Kinostart‑Kalender aktualisieren
+on:
+  schedule:
+    # jeden Samstag um 06:00 Uhr UTC (08:00 Uhr MESZ); ggf. anpassen
+    - cron: '0 6 * * 6'
+  workflow_dispatch: {}  # optional, um manuell starten zu können
+
+permissions:
+  contents: write  # erlaubt das Zurückschreiben in das Repository
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python einrichten
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Abhängigkeiten installieren
+        run: pip install requests beautifulsoup4
+      - name: Kalender erzeugen
+        run: python update_kinostarts_calendar.py
+      - name: Änderungen committen
+        run: |
+          git config user.name "github‑actions"
+          git config user.email "actions@github.com"
+          # nur committen, wenn sich die Datei geändert hat
+          if [ -n "$(git status --porcelain kinostarts_calendar.ics)" ]; then
+            git add kinostarts_calendar.ics
+            git commit -m "Automatisches Update des Kinostart‑Kalenders"
+            git push
+          fi
